@@ -10,8 +10,8 @@ import sqlite3
 from sqlite3 import Error
 import constants
 from os.path import isfile
-import city_tier_mapping
-import significant_categorical_level
+from mapping import city_tier_mapping
+from mapping import significant_categorical_level
 
 
 ###############################################################################
