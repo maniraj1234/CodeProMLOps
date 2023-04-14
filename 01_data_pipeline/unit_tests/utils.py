@@ -189,12 +189,23 @@ def map_categorical_vars(DB_FILE_NAME, DB_PATH ,list_platform ,list_medium ,list
     try:
         conn = sqlite3.connect(filename)
         df = pd.read_sql_query('SELECT * FROM city_tier_mapped', conn)
-        df['first_platform_c'] = df['first_platform_c'].map(
-            lambda x: x if x in list_platform else 'others')
-        df['first_utm_medium_c'] = df['first_utm_medium_c'].map(
-            lambda x: x if x in list_medium else 'others')
-        df['first_utm_source_c'] = df['first_utm_source_c'].map(
-            lambda x: x if x in list_source else 'others')
+        new_df = df[~df['first_platform_c'].isin(list_platform)] # get rows for levels which are not present in list_platform
+        new_df['first_platform_c'] = "others" # replace the value of these levels to others
+        old_df = df[df['first_platform_c'].isin(list_platform)] # get rows for levels which are present in list_platform
+        df = pd.concat([new_df, old_df])
+        
+        # all the levels below 90 percentage are assgined to a single level called others
+        new_df = df[~df['first_utm_medium_c'].isin(list_medium)] # get rows for levels which are not present in list_medium
+        new_df['first_utm_medium_c'] = "others" # replace the value of these levels to others
+        old_df = df[df['first_utm_medium_c'].isin(list_medium)] # get rows for levels which are present in list_medium
+        df = pd.concat([new_df, old_df]) # concatenate new_df and old_df to get the final dataframe
+
+        # all the levels below 90 percentage are assgined to a single level called others
+        new_df = df[~df['first_utm_source_c'].isin(list_source)] # get rows for levels which are not present in list_source
+        new_df['first_utm_source_c'] = "others" # replace the value of these levels to others
+        old_df = df[df['first_utm_source_c'].isin(list_source)] # get rows for levels which are present in list_source
+        df = pd.concat([new_df, old_df]) # concatenate new_df and old_df to get the final dataframe
+        
         df.to_sql('categorical_variables_mapped', conn, if_exists='replace', index=False)
     except Error as e:
         print(e)
@@ -258,12 +269,12 @@ def interactions_mapping(DB_FILE_NAME, DB_PATH, INTERACTION_MAPPING, INDEX_COLUM
         df = pd.melt(df, id_vars=index_cols_train_dynamic, var_name='interaction_type', value_name='interaction_value')#pd.melt(df, id_vars=INDEX_COLUMNS_TRAINING, value_vars=interaction_mapping_pd.keys())
         df['interaction_value'] = df['interaction_value'].fillna(0)
         df = pd.merge(df, interaction_mapping_pd, on='interaction_type', how='left')
-        df.drop(['interaction_type'], axis=1)
-        df_pivot = df.pivot_table(
+        #df.drop(['interaction_type'], axis=1)
+        df = df.pivot_table(
                 values='interaction_value', index=index_cols_train_dynamic, columns='interaction_mapping', aggfunc='sum')#df.pivot_table(index=INDEX_COLUMNS_TRAINING, columns='variable', values='value', aggfunc='first')
         df = df.reset_index()
         df.to_sql('interactions_mapped', conn, if_exists='replace', index=False) 
-        df = df.drop(NOT_FEATURES, axis=1)       
+        #df = df.drop(NOT_FEATURES, axis=1)       
         df.to_sql('model_input', conn, if_exists='replace', index=False)
     except Error as e:
         print(e)
