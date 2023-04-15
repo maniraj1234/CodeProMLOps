@@ -151,7 +151,7 @@ def test_map_categorical_vars(DB_FILE_NAME, DB_PATH, UNIT_TEST_DB_FILE_NAME):
 ###############################################################################
 # Write test cases for interactions_mapping() function
 # ##############################################################################    
-def test_interactions_mapping():
+def test_interactions_mapping(DB_FILE_NAME, DB_PATH, UNIT_TEST_DB_FILE_NAME):
     """_summary_
     This function checks if test_column_mapping function is working properly by
     comparing its output with test cases provided in the db in a table named
@@ -166,4 +166,31 @@ def test_interactions_mapping():
         output=test_column_mapping()
 
     """ 
-   
+    try:
+        INTERACTION_MAPPING = constants.INTERACTION_MAPPING
+        INDEX_COLUMNS_TRAINING = constants.INDEX_COLUMNS_TRAINING
+        INDEX_COLUMNS_INFERENCE = constants.INDEX_COLUMNS_INFERENCE
+        NOT_FEATURES = constants.NOT_FEATURES
+        utils.interactions_mapping(DB_FILE_NAME, DB_PATH ,INTERACTION_MAPPING, INDEX_COLUMNS_TRAINING, INDEX_COLUMNS_INFERENCE, NOT_FEATURES)
+        
+        print("initiating db connection")
+        conn = sqlite3.connect(os.path.join(DB_PATH, DB_FILE_NAME))
+        print("initiating unit test db connection")
+        conn_test_db = sqlite3.connect(os.path.join(DB_PATH, UNIT_TEST_DB_FILE_NAME))
+
+        # Load the output data from the actual database
+        output_data = pd.read_sql_query("SELECT * FROM interactions_mapped", con=conn)
+
+        # Load the test data from the test database
+        test_data = pd.read_sql_query("SELECT * FROM interactions_mapped_test_case", con=conn_test_db)
+
+        # Compare the two dataframes
+        #assert test_data.equals(output_data)
+        pd.testing.assert_frame_equal(test_data, output_data)
+        print("Test passed")
+    except Exception as e:
+        print("Test failed")
+        print(e)
+    finally:
+        conn.close()
+        conn_test_db.close()    

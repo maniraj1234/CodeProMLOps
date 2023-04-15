@@ -274,7 +274,7 @@ def interactions_mapping(DB_FILE_NAME, DB_PATH, INTERACTION_MAPPING, INDEX_COLUM
                 values='interaction_value', index=index_cols_train_dynamic, columns='interaction_mapping', aggfunc='sum')#df.pivot_table(index=INDEX_COLUMNS_TRAINING, columns='variable', values='value', aggfunc='first')
         df = df.reset_index()
         df.to_sql('interactions_mapped', conn, if_exists='replace', index=False) 
-        #df = df.drop(NOT_FEATURES, axis=1)       
+        df = df.drop(NOT_FEATURES, axis=1)       
         df.to_sql('model_input', conn, if_exists='replace', index=False)
     except Error as e:
         print(e)

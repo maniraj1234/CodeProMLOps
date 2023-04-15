@@ -11,7 +11,8 @@ INDEX_COLUMNS_TRAINING = ['created_date', 'city_tier', 'first_platform_c',
 INDEX_COLUMNS_INFERENCE = ['created_date', 'city_tier', 'first_platform_c',
        'first_utm_medium_c', 'first_utm_source_c', 'total_leads_droppped',
        'referred_lead', 'app_complete_flag']
-NOT_FEATURES = ['interaction_type']
+NOT_FEATURES = ['created_date','assistance_interaction', 'career_interaction',
+       'payment_interaction', 'social_interaction', 'syllabus_interaction']
 
 
 
