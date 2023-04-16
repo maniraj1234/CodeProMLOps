@@ -12,9 +12,8 @@ EXPERIMENT = 'Lead_Scoring_Training_Pipeline'
 model_config = {'boosting_type': 'gbdt', 'class_weight': None, 'colsample_bytree': 1.0, 'importance_type': 'split', 'learning_rate': 0.1, 'max_depth': -1, 'min_child_samples': 20, 'min_child_weight': 0.001, 'min_split_gain': 0.0, 'n_estimators': 100, 'n_jobs': -1, 'num_leaves': 31, 'objective': None, 'random_state': 42, 'reg_alpha': 0.0, 'reg_lambda': 0.0, 'silent': 'warn', 'subsample': 1.0, 'subsample_for_bin': 200000, 'subsample_freq': 0}
 
 # list of the features that needs to be there in the final encoded dataframe
-ONE_HOT_ENCODED_FEATURES = ['created_date', 'total_leads_droppped', 'referred_lead',
-       'app_complete_flag', 'assistance_interaction', 'career_interaction',
-       'payment_interaction', 'social_interaction', 'syllabus_interaction',
+ONE_HOT_ENCODED_FEATURES = ['total_leads_droppped', 'referred_lead',
+       'app_complete_flag', 
        'first_platform_c_Level1', 'first_platform_c_Level2',
        'first_platform_c_Level3', 'first_platform_c_Level7',
        'first_platform_c_Level8', 'first_platform_c_others',

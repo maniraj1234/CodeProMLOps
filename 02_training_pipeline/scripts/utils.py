@@ -133,69 +133,55 @@ def get_trained_model(db_file_name, db_path):
         y = pd.read_sql_query('SELECT * FROM target', conn)
         X = pd.read_sql_query('SELECT * FROM features', conn)
         
+        if('app_complete_flag' in X.columns):
+            X.drop(['app_complete_flag'],axis = 1, inplace=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state = 0)
 
         mlflow.set_tracking_uri(constants.TRACKING_URI)
 
         #Model Training
-                 #Model Training
-        gkf = StratifiedKFold(n_splits=10, shuffle=True, random_state=42).split(X, y) # startifyKFold 
+        model_config = {
+                'boosting_type': 'gbdt',
+                'class_weight': None,
+                'colsample_bytree': 1.0,
+                'importance_type': 'split' ,
+                'learning_rate': 0.1,
+                'max_depth': -1,
+                'min_child_samples': 20,
+                'min_child_weight': 0.001,
+                'min_split_gain': 0.0,
+                'n_estimators': 100,
+                'n_jobs': -1,
+                'num_leaves': 31,
+                'objective': None,
+                'random_state': 40,
+                'reg_alpha': 0.0,
+                'reg_lambda': 0.0,
+                'silent': 'warn',
+                'subsample': 1.0,
+                'subsample_for_bin': 200000 ,
+                'subsample_freq': 0
+                }
 
-        gridParams = {
-            'learning_rate': [0.005, 0.01,0.1],
-            'n_estimators': [8,16,24,50],
-            'num_leaves': [6,8,12,16], # large num_leaves helps improve accuracy but might lead to over-fitting
-            'boosting_type' : ['gbdt', 'dart'], # for better accuracy -> try dart
-            'objective' : ['binary'],
-            'max_bin':[255, 510], # large max_bin helps improve accuracy but might slow down training progress
-            'random_state' : [500],
-            'colsample_bytree' : [0.64, 0.65, 0.66],
-            'subsample' : [0.7,0.75],
-            'reg_alpha' : [1,1.2],
-            'reg_lambda' : [1,1.2,1.4],
-            'max_depth': [1,3,5]
-            }
+        with mlflow.start_run(run_name='test') as run:
+            #Model Training
+            clf = lgb.LGBMClassifier()
+            clf.set_params(**model_config) 
+            clf.fit(X_train, y_train)
 
-        model_params = {
-            'objective':'binary', 
-            'num_boost_round':200, 
-            'metric':'f1',
-            'categorical_feature':[],
-            'verbose':-1,
-            'force_row_wise':True
-                       }
+            mlflow.sklearn.log_model(sk_model=clf,artifact_path="models", registered_model_name='LightGBM')
+            mlflow.log_params(model_config)    
 
-        lgb_estimator = lgb.LGBMClassifier()
-        lgb_estimator.set_params(**model_params)
-
-        gsearch = BayesSearchCV(estimator=lgb_estimator, search_spaces=gridParams, cv=gkf,n_iter=32,random_state=0,n_jobs=-1,verbose=-1,scoring='roc_auc')
-        lgb_model = gsearch.fit(X, y)
-        best_model = lgb_model.best_estimator_
-        auc_score = lgb_model.best_score_
-        for p in gridParams:
-            print(f"Best {p} : {best_model.get_params()[p]}")
-
-
-        timestamp = str(int(time.time()))
-        with mlflow.start_run(run_name=f"LGBM_Bayes_Search_{timestamp}") as run:
-            y_pred = best_model.predict(X_test)
-
-            # Log model
-            mlflow.sklearn.log_model(best_model,registered_model_name='LightGBM',artifact_path='models')
-            # mlflow.mlflow_log_artifact(best_model, artifact_path ="sqlite:///database/mlflow_v01.db")
-
-
-            # Log params
-            model_params = best_model.get_params()
-            [mlflow.log_param(p, model_params[p]) for p in gridParams]
+            # predict the results on training dataset
+            y_pred=clf.predict(X_test)
 
             #Log metrics
             acc=accuracy_score(y_pred, y_test)
             conf_mat = confusion_matrix(y_pred, y_test)
             precision = precision_score(y_pred, y_test,average= 'macro')
             recall = recall_score(y_pred, y_test, average= 'macro')
-            auc = roc_auc_score(y_pred, y_test, average='macro')
-            #f1_score = f1_score(y_pred, y_test, average='macro')
+            f1 = f1_score(y_pred, y_test, average='macro')
+            auc = roc_auc_score(y_pred,y_test,average='macro')
             cm = confusion_matrix(y_test, y_pred)
             tn = cm[0][0]
             fn = cm[1][0]
@@ -205,6 +191,7 @@ def get_trained_model(db_file_name, db_path):
             class_one = precision_recall_fscore_support(y_test, y_pred, average='binary',pos_label=1)
 
             mlflow.log_metric('test_accuracy', acc)
+            mlflow.log_metric("f1", f1)
             mlflow.log_metric("Precision", precision)
             mlflow.log_metric("Recall", recall)
             mlflow.log_metric("Precision_0", class_zero[0])
@@ -215,8 +202,7 @@ def get_trained_model(db_file_name, db_path):
             mlflow.log_metric("f1_1", class_one[2])
             mlflow.log_metric("False Negative", fn)
             mlflow.log_metric("True Negative", tn)
-            #mlflow.log_metric("f1", f1_score)
-            mlflow.log_metric("auc", auc)
+            mlflow.log_metric("AUC", auc)
 
             runID = run.info.run_uuid
             print("Inside MLflow Run with id {}".format(runID))
