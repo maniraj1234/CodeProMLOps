@@ -2,3 +2,5 @@
 01_data_pipeline/scripts/__pycache__/constants.cpython-39.pyc
 01_data_pipeline/scripts/__pycache__/data_validation_checks.cpython-39.pyc
 01_data_pipeline/scripts/__pycache__/constants.cpython-39.pyc
+lead_scoring_data_cleaning.db
+lead_scoring_model_experimentation.db

@@ -1,0 +1,1 @@
+zeros_percentage: 39.736111, ones_percentage: 60.263889
